@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "soc/io_mux_reg.h"
 #include "esp32/rom/gpio.h"
 #include "esp32/rom/lldesc.h"
-#include "driver/periph_ctrl.h"
+#include "esp_private/periph_ctrl.h"
 #include "driver/dac.h"
 #include "driver/gpio.h"
 #include "driver/i2s.h"
@@ -43,6 +43,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 static const char* TAG = "VIDEO";
 
 #if CONFIG_VIDEO_DIAG_ENABLE_INTERRUPT_STATS
+#include "esp_timer.h"
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
@@ -252,6 +253,12 @@ static void setup_video_signal(VIDEO_MODE mode, DAC_FREQUENCY dac_frequency, uin
 
 static void set_dac_frequency(void)
 {
+
+#define rtc_clk_apll_enable(enable, sdm0, sdm1, sdm2, o_div) do { \
+	rtc_clk_apll_enable(enable); \
+	if (enable) rtc_clk_apll_coeff_set(o_div, sdm0, sdm1, sdm2); \
+} while (0)
+
     switch(g_video_signal.dac_frequency)
     {
         case DAC_FREQ_PAL_14_75MHz:
@@ -289,6 +296,9 @@ static void set_dac_frequency(void)
             assert(false);
             break;
     }
+
+#undef rtc_clk_apll_enable
+
 }
 
 static void setup_video_dac(void)
